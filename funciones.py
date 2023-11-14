@@ -14,6 +14,7 @@ from sklearn.linear_model import HuberRegressor
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
 from scipy.optimize import minimize
+from scipy.stats import t
 
 def plot_histograms_separados(dataframe):
 
@@ -155,3 +156,49 @@ def l1_regression(X, y, max_iterations=100, tol=1e-4):
     result = minimize(lambda b: l1_regression_loss(b, X, y), beta, method='L-BFGS-B', options={'disp': True, 'maxiter': max_iterations, 'gtol': tol})
     
     return result.x
+
+
+def int_conf_no_par(x,y):
+    datos_1=pd.concat([pd.DataFrame(x),pd.DataFrame(y)], axis=1)
+
+    B = 500
+    k = int(len(datos_1)*0.8)
+
+
+    param_1 = []
+
+    for i in range(B):
+        sample_1 = datos_1.sample(n = k)
+        param_1.append(mean_absolute_deviation(sample_1.iloc[:,0],sample_1.iloc[:,1]))
+
+        
+    return (np.quantile(param_1,0.01),np.quantile(param_1,0.99))
+
+def int_conf_sem_par(y):
+
+    min = np.min(y)
+
+    # Realiza el procedimiento de Jackknife
+    jackknife_mins = []
+
+    for i in range(len(y)):
+        jackknife_data = np.delete(y.values, i)
+        jackknife_min = np.min(jackknife_data)
+        jackknife_mins.append(jackknife_min)
+
+    # Estimación de la varianza
+    jackknife_std = np.std(jackknife_mins, ddof=1)
+
+
+    jackknife_bias = (len(y) - 1) * (np.min(jackknife_mins) - min)
+
+    # Grados de libertad
+    df = len(y) - 1
+
+    # Nivel de confianza
+    alpha = 0.01
+
+    # Intervalo de confianza
+    t_critical = t.ppf(1 - alpha / 2, df)
+    lower_limit = min - t_critical * jackknife_std
+    upper_limit = min + t_critical * jackknife_std
