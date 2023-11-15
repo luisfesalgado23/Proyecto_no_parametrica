@@ -67,7 +67,7 @@ def outliers_euclidea(X, alfa):
     cutoff = np.percentile(distances,100-alfa*100)
     
     outliers = (distances > cutoff).astype(int)
-    return outliers
+    return outliers, distances
 
 def outliers_mahal(X, alfa):
     
@@ -84,7 +84,7 @@ def outliers_mahal(X, alfa):
     cutoff = np.percentile(distances,100-alfa*100)
     
     outliers = (distances > cutoff).astype(int)
-    return outliers
+    return outliers, distances
 
 def euclidean_distance(a, b):
     return np.sqrt(np.sum((a - b)**2))
