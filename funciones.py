@@ -127,20 +127,20 @@ def huber_loss(u, c):
     return np.where(np.abs(u) <= c, 0.5 * u**2, c * (np.abs(u) - 0.5 * c))
 
 def tukey_bisquare_weights(u, k):
-    return np.where(np.abs(u) <= k, (1 - (u / k)**2)**2, 0)
+    return np.where(np.abs(u) <= k, (1 - (u / k)*2)*2, 0)
 
-def loss_function(beta, X, y, loss_fn, weights):
+def loss_function(beta, X, y, loss_fn, weights, c):
     residuals = y - X.dot(beta)
-    return np.sum(weights * loss_fn(residuals, 1))
+    return np.sum(weights * loss_fn)
 
-def fit_m_estimator(X, y, loss_function, weights_fn, c, k, max_iterations=100, tol=1e-4):
+def fit_m_estimator(X, y, c, k, max_iterations=100, tol=1e-4):
     n, p = X.shape
     beta = np.zeros(p)
 
-    result = minimize(lambda b: loss_function(b, X, y, huber_loss, weights_fn(X.dot(b) - y, k)),
+    result = minimize(lambda b: loss_function(b, X, y, huber_loss(X.dot(b) - y, c), tukey_bisquare_weights(X.dot(b) - y, k), c),
                       beta, method='L-BFGS-B', options={'disp': True, 'maxiter': max_iterations, 'gtol': tol})
     
-    return result.x
+    return result.x/100
 
 def l1_loss(u):
     return np.sum(np.abs(u))
@@ -156,7 +156,6 @@ def l1_regression(X, y, max_iterations=100, tol=1e-4):
     result = minimize(lambda b: l1_regression_loss(b, X, y), beta, method='L-BFGS-B', options={'disp': True, 'maxiter': max_iterations, 'gtol': tol})
     
     return result.x
-
 
 def int_conf_no_par(x,y):
     datos_1=pd.concat([pd.DataFrame(x),pd.DataFrame(y)], axis=1)
@@ -202,3 +201,13 @@ def int_conf_sem_par(y):
     t_critical = t.ppf(1 - alpha / 2, df)
     lower_limit = min - t_critical * jackknife_std
     upper_limit = min + t_critical * jackknife_std
+
+def add_outliers(data, num_outliers=50, magnitude=10):
+
+    outlier_indices = np.random.choice(1002, num_outliers, replace=False)
+    dataset_out = np.copy(data)
+    dataset_out[outlier_indices] += magnitude * np.random.randn(num_outliers, 13)
+    dataset_out = pd.DataFrame(data=dataset_out, columns=data.columns.values)
+
+    return dataset_out
+
